@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, getDocs } from "firebase/firestore";
+import { getFirestore, connectFirestoreEmulator, collection, addDoc, getDocs } from "firebase/firestore";
 
 const firebaseConfig = {
 	apiKey: "AIzaSyB7fS8VSOUOTjKXEeJwzkXQrEueVvtT16Q",
@@ -15,6 +15,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+if (window.location.hostname === "localhost") {
+	connectFirestoreEmulator(db, "localhost", 8080);
+}
+
 export function FirestoreExample() {
 	useEffect(() => {
 		async function runFirestore() {
@@ -23,7 +27,7 @@ export function FirestoreExample() {
 					first: "Ada",
 					last: "Lovelace",
 					born: 1815
-				});
+					});
 				console.log("Document written with ID: ", docRef.id);
 				
 				const querySnapshot = await getDocs(collection(db, "users"));
