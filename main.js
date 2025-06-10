@@ -10,9 +10,6 @@ const restaurantCuisine = document.getElementById('restaurant-cuisine');
 const restaurantAdditional = document.getElementById('restaurant-additional');
 const restaurantImage = document.getElementById('restaurant-image');
 
-const MAPBOX_CID = 'YOUR_MAPBOX_API_KEY';
-const MAPBOX_API_KEY = 'YOUR_MAPBOX_API_KEY';
-
 function init() {
 	radiusInput.addEventListener('input', (e) => {
 		radiusValue.textContent = `${e.target.value}m`;
@@ -39,7 +36,7 @@ async function handlePickClick() {
 			throw new Error('Location not found');
 		}
 		
-		const restaurant = await getRestaurantWithFallback(coords);
+		const restaurant = await getOSMRestaurant(coords);
 		if (!restaurant) {
 			throw new Error('No restaurants found in this area');
 		}
@@ -81,69 +78,6 @@ async function getCoordinates(location) {
 	} catch (error) {
 		console.error('Error in getCoordinates:', error);
 		throw error;
-	}
-}
-
-async function getRestaurantWithFallback(coords) {
-	try {
-		const mapboxRestaurant = await getMapboxRestaurant(coords);
-		if (mapboxRestaurant && hasSufficientData(mapboxRestaurant)) {
-			console.log('Using Mapbox data');
-			return mapboxRestaurant;
-		}
-		
-		console.log('Using OpenStreetMap data');
-		return await getOSMRestaurant(coords);
-	} catch (error) {
-		console.error('Error in getRestaurantWithFallback:', error);
-		return await getOSMRestaurant(coords);
-	}
-}
-
-function hasSufficientData(restaurant) {
-	const requiredFields = ['name', 'address'];
-	const importantFields = ['phone', 'website', 'openingHours', 'cuisine'];
-	
-	const hasRequired = requiredFields.every(field => restaurant[field]);
-	const hasImportant = importantFields.filter(field => restaurant[field]).length >= 2;
-	
-	return hasRequired && hasImportant;
-}
-
-async function getMapboxRestaurant(coords) {
-	try {
-		const radius = radiusInput.value;
-		const response = await fetch(
-			`https://api.mapbox.com/geocoding/v5/mapbox.places/restaurant.json?proximity=${coords.lon},${coords.lat}&radius=${radius}&types=poi&access_token=${MAPBOX_API_KEY}`
-		);
-		
-		if (!response.ok) {
-			throw new Error(`Mapbox API error: ${response.status}`);
-		}
-		
-		const data = await response.json();
-		if (!data.features || data.features.length === 0) {
-			return null;
-		}
-		
-		const randomPlace = data.features[Math.floor(Math.random() * data.features.length)];
-		
-		return {
-			source: 'mapbox',
-			name: randomPlace.text,
-			address: randomPlace.place_name,
-			coordinates: {
-				lat: randomPlace.center[1],
-				lon: randomPlace.center[0]
-			},
-			phone: randomPlace.context?.find(c => c.id.startsWith('phone'))?.text,
-			website: randomPlace.properties?.website,
-			categories: randomPlace.properties?.category?.split(','),
-			cuisine: randomPlace.properties?.category
-		};
-	} catch (error) {
-		console.error('Error in getMapboxRestaurant:', error);
-		return null;
 	}
 }
 
